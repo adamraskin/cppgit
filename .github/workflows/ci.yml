@@ -1,0 +1,24 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dependencies (Ubuntu)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y cmake pkg-config libssl-dev zlib1g-dev libcurl4-openssl-dev
+      - name: Dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install cmake openssl@3 curl pkg-config
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --config Release
+      - name: Unit tests
+        run: ctest --test-dir build --output-on-failure
+      - name: Native Git pack interoperability
+        run: ./tests/pack_interop.sh ./build/cppgit
